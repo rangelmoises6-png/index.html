@@ -43,8 +43,8 @@
       background: transparent;
       border: 1px solid var(--primary);
       color: var(--primary);
-      padding: 4px 8px;
-      border-radius: 4px;
+      padding: 5px 10px;
+      border-radius: 6px;
       font-size: 0.75rem;
       cursor: pointer;
     }
@@ -102,8 +102,8 @@
       color: var(--text);
       font-size: 0.95rem;
       line-height: 1.45;
-      padding: 10px;
-      background: rgba(6, 21, 45, 0.4);
+      padding: 12px;
+      background: rgba(6, 21, 45, 0.5);
       border-radius: 8px;
       border: 1px solid rgba(255, 255, 255, 0.08);
       box-sizing: border-box;
@@ -156,7 +156,7 @@
 
   <div class="header-bar">
     <span id="theme-name">MARK II // CIAN</span>
-    <button class="hud-btn" onclick="toggleTheme()">🎨 Cambiar Armadura</button>
+    <button class="hud-btn" onclick="toggleTheme()">🎨 Armadura</button>
   </div>
 
   <div class="main-stage">
@@ -165,7 +165,7 @@
     </div>
 
     <div class="status" id="status">TOCA PARA HABLAR</div>
-    <div id="response-box">Sistemas listos, señor. ¿En qué puedo asistirle?</div>
+    <div id="response-box">Sistemas listos, señor. Enlace restablecido.</div>
   </div>
 
   <div class="controls-container">
@@ -181,7 +181,7 @@
   </div>
 
   <script>
-    // --- TEMAS DE ARMADURAS ---
+    // --- TEMAS ---
     const THEMES = [
       { name: "MARK II // CIAN", primary: "#00d9ff", glow: "rgba(0, 217, 255, 0.45)", bg: "#030a16", surface: "#06152d" },
       { name: "MARK III // ORO Y ROJO", primary: "#ffb703", glow: "rgba(255, 183, 3, 0.5)", bg: "#1f0303", surface: "#360606" },
@@ -201,7 +201,7 @@
       playSound('activar');
     }
 
-    // --- SONIDOS SCI-FI ---
+    // --- SONIDOS ---
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     let audioCtx = null;
 
@@ -237,11 +237,11 @@
           osc.stop(now + 0.08);
         }
       } catch (e) {
-        console.warn("Audio Context:", e);
+        console.warn("Audio error:", e);
       }
     }
 
-    // --- GESTIÓN DE API KEY ---
+    // --- API KEY ---
     function getApiKey() {
       let key = localStorage.getItem("GEMINI_KEY");
       if (!key) {
@@ -260,13 +260,12 @@
       }
     }
 
-    // --- HISTORIAL Y CONFIGURACIÓN ---
-    const SYSTEM_INSTRUCTION = "Eres J.A.R.V.I.S., el asistente de inteligencia artificial de Iron Man. Trata al usuario formalmente con 'señor'. Responde de forma muy concisa (máximo 2 a 3 oraciones), con elegancia, precisión y tono resolutivo.";
+    const SYSTEM_INSTRUCTION = "Eres J.A.R.V.I.S., el asistente de inteligencia artificial de Iron Man. Trata al usuario con respeto y formalidad llamándolo 'señor'. Responde de forma muy concisa (máximo 2 a 3 oraciones), con elegancia y precisión.";
     let conversationHistory = [];
 
     function resetMemory() {
       conversationHistory = [];
-      document.getElementById('response-box').innerText = "Memoria de conversación reiniciada, señor.";
+      document.getElementById('response-box').innerText = "Memoria borrada. Sistemas listos, señor.";
       playSound('listo');
     }
 
@@ -305,7 +304,7 @@
       window.speechSynthesis.resume();
       if (!getApiKey()) return;
       if (!recognition) {
-        alert("Reconocimiento de voz no soportado.");
+        alert("Reconocimiento de voz no soportado. Usa texto.");
         return;
       }
 
@@ -326,7 +325,7 @@
       }
     }
 
-    // --- LLAMADA A GEMINI (SIN TOOLS DE PAGO) ---
+    // --- PROCESAMIENTO CON MODELO ESTABLE OFICIAL ---
     async function processQuery(userText) {
       document.getElementById('status').innerText = "PROCESANDO...";
       document.getElementById('response-box').innerText = `Usted: "${userText}"`;
@@ -339,12 +338,9 @@
 
       conversationHistory.push({ role: "user", parts: [{ text: userText }] });
 
-      if (conversationHistory.length > 10) {
-        conversationHistory = conversationHistory.slice(-10);
-      }
-
       try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+        // Endpoint oficial y 100% gratuito sin cuotas de búsqueda web
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -357,13 +353,7 @@
 
         if (data.error) throw new Error(data.error.message);
 
-        let reply = "";
-        if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts) {
-          reply = data.candidates[0].content.parts.map(p => p.text || '').join('');
-        }
-
-        if (!reply) reply = "Comando procesado, señor.";
-
+        const reply = data.candidates[0].content.parts[0].text;
         conversationHistory.push({ role: "model", parts: [{ text: reply }] });
 
         document.getElementById('response-box').innerText = reply;
@@ -373,6 +363,8 @@
         speak(reply);
 
       } catch (error) {
+        // En caso de error, retirar el último turno para no contaminar la memoria
+        conversationHistory.pop();
         document.getElementById('status').innerText = "ERROR EN EL SISTEMA";
         document.getElementById('response-box').innerText = "Error: " + error.message;
         console.error(error);

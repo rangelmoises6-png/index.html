@@ -165,7 +165,7 @@
     </div>
 
     <div class="status" id="status">TOCA PARA HABLAR</div>
-    <div id="response-box">Sistemas integrados en línea, señor. ¿En qué puedo asistirle?</div>
+    <div id="response-box">Sistemas listos, señor. ¿En qué puedo asistirle?</div>
   </div>
 
   <div class="controls-container">
@@ -184,8 +184,8 @@
     // --- TEMAS DE ARMADURAS ---
     const THEMES = [
       { name: "MARK II // CIAN", primary: "#00d9ff", glow: "rgba(0, 217, 255, 0.45)", bg: "#030a16", surface: "#06152d" },
-      { name: "MARK III // GOLD & RED", primary: "#ffb703", glow: "rgba(255, 183, 3, 0.5)", bg: "#1f0303", surface: "#360606" },
-      { name: "STEALTH // VERDE TÁCTICO", primary: "#00ff88", glow: "rgba(0, 255, 136, 0.45)", bg: "#02120a", surface: "#052615" },
+      { name: "MARK III // ORO Y ROJO", primary: "#ffb703", glow: "rgba(255, 183, 3, 0.5)", bg: "#1f0303", surface: "#360606" },
+      { name: "SIGILO // VERDE TÁCTICO", primary: "#00ff88", glow: "rgba(0, 255, 136, 0.45)", bg: "#02120a", surface: "#052615" },
       { name: "WAR MACHINE // TITANIO", primary: "#e0e0e0", glow: "rgba(255, 255, 255, 0.4)", bg: "#111114", surface: "#222228" }
     ];
     let currentThemeIdx = 0;
@@ -326,7 +326,7 @@
       }
     }
 
-    // --- LLAMADA A GEMINI CON HISTORIAL Y HERRAMIENTAS ---
+    // --- LLAMADA A GEMINI (SIN TOOLS DE PAGO) ---
     async function processQuery(userText) {
       document.getElementById('status').innerText = "PROCESANDO...";
       document.getElementById('response-box').innerText = `Usted: "${userText}"`;
@@ -337,12 +337,10 @@
         return;
       }
 
-      // Añadir turno de usuario a la memoria
       conversationHistory.push({ role: "user", parts: [{ text: userText }] });
 
-      // Mantener memoria en un límite razonable (últimos 12 mensajes)
-      if (conversationHistory.length > 12) {
-        conversationHistory = conversationHistory.slice(-12);
+      if (conversationHistory.length > 10) {
+        conversationHistory = conversationHistory.slice(-10);
       }
 
       try {
@@ -351,8 +349,7 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-            contents: conversationHistory,
-            tools: [{ googleSearch: {} }]
+            contents: conversationHistory
           })
         });
 
@@ -367,7 +364,6 @@
 
         if (!reply) reply = "Comando procesado, señor.";
 
-        // Guardar respuesta del modelo en memoria
         conversationHistory.push({ role: "model", parts: [{ text: reply }] });
 
         document.getElementById('response-box').innerText = reply;
@@ -385,7 +381,6 @@
 
     function speak(text) {
       window.speechSynthesis.cancel();
-      // Eliminar formato markdown simple antes de pronunciar
       const cleanText = text.replace(/[*_#`]/g, '');
       const utterance = new SpeechSynthesisUtterance(cleanText);
       utterance.lang = 'es-ES';

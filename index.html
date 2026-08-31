@@ -339,8 +339,8 @@
       conversationHistory.push({ role: "user", parts: [{ text: userText }] });
 
       try {
-        // Endpoint oficial y 100% gratuito sin cuotas de búsqueda web
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        // AQUÍ ESTABA EL ERROR: Ya está corregido a gemini-3.6-flash
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -363,7 +363,6 @@
         speak(reply);
 
       } catch (error) {
-        // En caso de error, retirar el último turno para no contaminar la memoria
         conversationHistory.pop();
         document.getElementById('status').innerText = "ERROR EN EL SISTEMA";
         document.getElementById('response-box').innerText = "Error: " + error.message;
